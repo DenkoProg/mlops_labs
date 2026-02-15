@@ -1,7 +1,7 @@
 [project]
-name = "mlops-lab-1"
+name = "mlops-labs"
 version = "0.1.0"
-description = "MLOps Lab 1: Chest X-Ray Pneumonia Classification with MLflow"
+description = "MLOps Labs: Chest X-Ray Pneumonia Classification"
 readme = "README.md"
 requires-python = ">=3.11"
 
