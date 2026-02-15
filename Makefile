@@ -14,6 +14,23 @@ format: ## Format code and fix linting issues
 	uv run ruff format
 	uv run ruff check --fix
 
+.PHONY: download-data
+download-data: ## Download Chest X-Ray dataset from Kaggle
+	uv run python src/download_data.py
+
+ARGS ?= --max-depth 15 --n-estimators 100
+.PHONY: train
+train: ## Train model (pass ARGS, e.g. make train ARGS="--max-depth 10")
+	uv run python src/train.py $(ARGS)
+
+.PHONY: mlflow
+mlflow: ## Launch MLflow UI at http://127.0.0.1:5000
+	uv run mlflow ui
+
+.PHONY: eda
+eda: ## Open EDA notebook
+	uv run jupyter lab notebooks/01_eda.ipynb
+
 .PHONY: help
 help: ## Show this help message
 	@uv run python -c "import re; \

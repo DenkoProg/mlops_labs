@@ -1,70 +1,88 @@
-# Python Repo Template
+# MLOps Lab 1 — Chest X-Ray Pneumonia Classification
 
-## ⚙️ Installation
+Binary image classification (NORMAL vs PNEUMONIA) using chest X-ray images with full MLflow experiment tracking.
 
-### 🔧 Set Up the Python Environment
+## Project Structure
 
-#### 1. Clone the repository
-
-```bash
-git clone REPO_NAME
-cd REPO_NAME
+```
+mlops_lab_1/
+├── data/raw/chest_xray/     # Dataset (not in Git)
+│   ├── train/
+│   ├── test/
+│   └── val/
+├── notebooks/
+│   └── 01_eda.ipynb         # Exploratory data analysis
+├── src/
+│   ├── download_data.py     # Dataset downloader
+│   └── train.py             # Training script with MLflow
+├── models/                  # Saved models (not in Git)
+├── mlruns/                  # MLflow tracking (not in Git)
+├── Makefile
+├── pyproject.toml
+└── uv.lock
 ```
 
-#### 2. Install `uv` — A fast Python package manager
-
-📖 [Installation guide](https://docs.astral.sh/uv/getting-started/installation/)
-
-#### 3. Create and activate a virtual environment
+## Setup
 
 ```bash
-uv venv
-source .venv/bin/activate
-```
-
-Alternatively, you can use the predefined Makefile command:
-
-```bash
-make install
-```
-This will set up the virtual environment, install dependencies, and configure pre-commit hooks automatically.
-
-#### 4. Install dependencies (choose ONE path)
-
-##### 4.1 Reproduce exact versions (use uv.lock)
-
-```bash
-# Usage environment (pinned, reproducible)
-uv sync --locked
-
-# Development environment (pinned + dev extras)
-uv sync --locked --extra dev
-```
-
-- Uses the checked-in uv.lock exactly; no re-resolution.
-- Ideal for CI and deterministic installs.
-
-##### 4.2 Resolve fresh compatible versions (from pyproject.toml)
-
-```bash
-# Usage environment (resolve now and write/update uv.lock)
 uv sync
-
-# Development environment (resolve + dev extras)
-uv sync --extra dev
 ```
 
-- Resolves to the latest compatible versions and writes/updates uv.lock.
-- Ideal when you want newer dependency versions locally.
+## Usage
 
-##### 4.3 pip-style installs (do NOT enforce the lockfile)
+### 1. Download Data
+
+Requires [Kaggle credentials](https://www.kaggle.com/docs/api#authentication) configured.
 
 ```bash
-# Usage only
-uv pip install .
-
-# Development (editable) install
-uv pip install -e .[dev]
+make download-data
 ```
 
-> These behave like regular pip installs and ignore uv.lock.
+### 2. Run EDA
+
+```bash
+make eda
+```
+
+### 3. Train Model
+
+```bash
+# Default parameters
+make train
+
+# Custom hyperparameters
+make train ARGS="--n-estimators 200 --max-depth 15 --img-size 64"
+```
+
+#### CLI Arguments
+
+| Argument             | Default                  | Description                 |
+| -------------------- | ------------------------ | --------------------------- |
+| `--n-estimators`     | 100                      | Number of trees             |
+| `--max-depth`        | None                     | Max tree depth              |
+| `--min-samples-split`| 2                        | Min samples to split a node |
+| `--img-size`         | 64                       | Image resize dimension      |
+| `--random-state`     | 42                       | Random seed                 |
+| `--experiment-name`  | chest_xray_pneumonia     | MLflow experiment name      |
+
+### 4. View Experiments
+
+```bash
+make mlflow-ui
+# Open http://127.0.0.1:5000
+```
+
+### 5. Run Multiple Experiments
+
+```bash
+# 1. Underfitting: low depth
+make train ARGS="--max-depth 3 --n-estimators 100"
+# 2. Moderate depth
+make train ARGS="--max-depth 10 --n-estimators 100"
+# 3. High depth
+make train ARGS="--max-depth 20 --n-estimators 100"
+# 4. Very high depth
+make train ARGS="--max-depth 50 --n-estimators 100"
+# 5. Overfitting: unlimited depth
+make train ARGS="--n-estimators 100"
+```
