@@ -18,7 +18,6 @@ format: ## Format code and fix linting issues
 download-data: ## Download Chest X-Ray dataset from Kaggle
 	uv run python src/download_data.py
 
-ARGS ?= --max-depth 15 --n-estimators 100
 .PHONY: prepare
 prepare: ## Run data preparation stage (dvc)
 	uv run python src/prepare.py data/raw/chest_xray data/prepared --img-size 64
