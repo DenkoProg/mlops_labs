@@ -31,6 +31,10 @@ train: ## Run full DVC pipeline (prepare + train)
 push-data: ## Push data and model artifacts to DVC remote
 	uv run dvc push
 
+.PHONY: optimize
+optimize: ## Run Optuna hyperparameter optimization (20+ trials, MLflow nested runs)
+	uv run python src/optimize.py
+
 .PHONY: mlflow
 mlflow: ## Launch MLflow UI at http://127.0.0.1:5000
 	uv run mlflow ui

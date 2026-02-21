@@ -17,6 +17,9 @@ dependencies = [
     "tqdm",
     "kagglehub",
     "typer",
+    "optuna>=4.7.0",
+    "hydra-core>=1.3.2",
+    "omegaconf>=2.3.0",
 ]
 
 [dependency-groups]

@@ -1,0 +1,14 @@
+defaults:
+  - model: random_forest
+  - _self_
+
+data:
+  prepared_dir: data/prepared
+
+mlflow:
+  experiment_name: rf_chest_xray_hpo
+
+optuna:
+  n_trials: 20
+  direction: maximize
+  seed: 42

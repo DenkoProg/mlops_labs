@@ -1,0 +1,15 @@
+n_estimators:
+  low: 50
+  high: 300
+
+max_depth:
+  low: 5
+  high: 30
+
+min_samples_split:
+  low: 2
+  high: 20
+
+class_weight: balanced
+random_state: 42
+img_size: 64
