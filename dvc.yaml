@@ -13,7 +13,8 @@ stages:
       - data/prepared
       - src/train.py
     outs:
-      - models/rf_model.joblib
+      - models/rf_chest_xray_maxdepth15_nest100.joblib
+      - artifacts
     metrics:
       - models/metrics.json:
           cache: false

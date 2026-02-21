@@ -173,12 +173,8 @@ def main(
 
         mlflow.sklearn.log_model(model, "random_forest_model")
 
-        models_dir = Path("models")
-        models_dir.mkdir(exist_ok=True)
-        mlflow.sklearn.log_model(model, "random_forest_model")
-
         models_dir.mkdir(exist_ok=True, parents=True)
-        model_filename = "rf_model.joblib"
+        model_filename = f"{experiment_name}.joblib"
         model_path = models_dir / model_filename
         joblib.dump(model, model_path)
         typer.echo(f"Model saved to {model_path}")

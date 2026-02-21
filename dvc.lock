@@ -10,8 +10,8 @@ stages:
       nfiles: 5856
     - path: src/prepare.py
       hash: md5
-      md5: 483bca8772aeb275dee136b9bf3c5b60
-      size: 2003
+      md5: e78e8cc13b2743908c92887a9474bf27
+      size: 2007
     outs:
     - path: data/prepared
       hash: md5
@@ -29,14 +29,19 @@ stages:
       nfiles: 4
     - path: src/train.py
       hash: md5
-      md5: 2ac7f32d537d6b0665501cd38f5e8947
-      size: 6869
+      md5: d3ae2f05615dc0ee9ff91bad86915700
+      size: 6748
     outs:
+    - path: artifacts
+      hash: md5
+      md5: dae9199737e297e0fe7a6298bdadec41.dir
+      size: 109514
+      nfiles: 2
     - path: models/metrics.json
       hash: md5
       md5: 157b8da3ad07291aad9cab268de3bdd3
       size: 393
-    - path: models/rf_model.joblib
+    - path: models/rf_chest_xray_maxdepth15_nest100.joblib
       hash: md5
       md5: 0e3d64465458bf05faa3f7db18a8f66d
       size: 2858105

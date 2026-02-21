@@ -19,9 +19,17 @@ download-data: ## Download Chest X-Ray dataset from Kaggle
 	uv run python src/download_data.py
 
 ARGS ?= --max-depth 15 --n-estimators 100
+.PHONY: prepare
+prepare: ## Run data preparation stage (dvc)
+	uv run python src/prepare.py data/raw/chest_xray data/prepared --img-size 64
+
 .PHONY: train
-train: ## Train model (pass ARGS, e.g. make train ARGS="--max-depth 10")
-	uv run python src/train.py $(ARGS)
+train: ## Run full DVC pipeline (prepare + train)
+	uv run dvc repro
+
+.PHONY: push-data
+push-data: ## Push data and model artifacts to DVC remote
+	uv run dvc push
 
 .PHONY: mlflow
 mlflow: ## Launch MLflow UI at http://127.0.0.1:5000
