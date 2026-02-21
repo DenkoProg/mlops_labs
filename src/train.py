@@ -1,15 +1,13 @@
+import json
 from pathlib import Path
 from typing import Annotated, Optional
 
 import joblib
-
 import matplotlib
 import matplotlib.pyplot as plt
 import mlflow
 import mlflow.sklearn
 import numpy as np
-import typer
-from PIL import Image
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
@@ -20,32 +18,14 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
 )
-from tqdm import tqdm
+import typer
 
 
 matplotlib.use("Agg")
 
 app = typer.Typer()
 
-DATA_DIR = Path("data/raw/chest_xray")
 CLASSES = ["NORMAL", "PNEUMONIA"]
-
-
-def load_images(directory: Path, img_size: int) -> tuple[np.ndarray, np.ndarray]:
-    images, labels = [], []
-    for label_idx, class_name in enumerate(CLASSES):
-        class_dir = directory / class_name
-        if not class_dir.exists():
-            continue
-        paths = list(class_dir.glob("*"))
-        for p in tqdm(paths, desc=f"Loading {class_name}"):
-            try:
-                img = Image.open(p).convert("L").resize((img_size, img_size))
-                images.append(np.array(img).flatten())
-                labels.append(label_idx)
-            except Exception:
-                continue
-    return np.array(images), np.array(labels)
 
 
 def save_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, path: str):
@@ -83,21 +63,25 @@ def save_feature_importance(model: RandomForestClassifier, img_size: int, path: 
 
 @app.command()
 def main(
+    data_dir: Annotated[Path, typer.Argument(help="Path to prepared data directory")],
+    models_dir: Annotated[Path, typer.Argument(help="Path to output models directory")],
     n_estimators: Annotated[int, typer.Option(help="Number of trees in the forest")] = 100,
-    max_depth: Annotated[Optional[int], typer.Option(help="Maximum depth of each tree")] = None,
+    max_depth: Annotated[int | None, typer.Option(help="Maximum depth of each tree")] = None,
     min_samples_split: Annotated[int, typer.Option(help="Minimum samples required to split a node")] = 2,
-    class_weight: Annotated[Optional[str], typer.Option(help="Class weight strategy: 'balanced' or None")] = "balanced",
-    img_size: Annotated[int, typer.Option(help="Resize images to img_size x img_size")] = 64,
+    class_weight: Annotated[str | None, typer.Option(help="Class weight strategy: 'balanced' or None")] = "balanced",
+    img_size: Annotated[int, typer.Option(help="Original img_size for feature importance plotting")] = 64,
     random_state: Annotated[int, typer.Option(help="Random seed for reproducibility")] = 42,
-    experiment_name: Annotated[Optional[str], typer.Option(help="MLflow experiment name (auto-generated if not set)")] = None,
+    experiment_name: Annotated[
+        str | None, typer.Option(help="MLflow experiment name (auto-generated if not set)")
+    ] = None,
 ):
-    typer.echo("Loading training data...")
-    X_train, y_train = load_images(DATA_DIR / "train", img_size)
-    typer.echo("Loading test data...")
-    X_test, y_test = load_images(DATA_DIR / "test", img_size)
+    typer.echo(f"Loading prepared training data from {data_dir}...")
+    X_train = np.load(data_dir / "X_train.npy")
+    y_train = np.load(data_dir / "y_train.npy")
 
-    X_train = X_train / 255.0
-    X_test = X_test / 255.0
+    typer.echo(f"Loading prepared test data from {data_dir}...")
+    X_test = np.load(data_dir / "X_test.npy")
+    y_test = np.load(data_dir / "y_test.npy")
 
     typer.echo(f"Train: {X_train.shape}, Test: {X_test.shape}")
     typer.echo(f"Train distribution: NORMAL={np.sum(y_train == 0)}, PNEUMONIA={np.sum(y_train == 1)}")
@@ -107,7 +91,7 @@ def main(
     # Auto-generate experiment name if not provided
     if experiment_name is None:
         depth_str = f"maxdepth{max_depth}" if max_depth is not None else "maxdepthNone"
-        experiment_name = f"rf_chest_xray_datasetv1_{depth_str}_nest{n_estimators}"
+        experiment_name = f"rf_chest_xray_{depth_str}_nest{n_estimators}"
 
     typer.echo(f"📊 Experiment: {experiment_name}")
 
@@ -115,7 +99,7 @@ def main(
 
     with mlflow.start_run():
         mlflow.set_tag("model_type", "RandomForest")
-        mlflow.set_tag("dataset_version", "chest_xray_v1")
+        mlflow.set_tag("dataset_version", "chest_xray_v1_dvc")
         mlflow.set_tag("img_size", str(img_size))
         mlflow.set_tag("class_weight", str(class_weight))
 
@@ -160,6 +144,13 @@ def main(
         mlflow.log_metrics(train_metrics)
         mlflow.log_metrics(test_metrics)
 
+        # Save metrics manually for DVC outputs
+        metrics_dict = {"train": train_metrics, "test": test_metrics}
+        metrics_file = models_dir / "metrics.json"
+        models_dir.mkdir(parents=True, exist_ok=True)
+        with open(metrics_file, "w") as f:
+            json.dump(metrics_dict, f, indent=4)
+
         typer.echo("\n--- Train Metrics ---")
         for k, v in train_metrics.items():
             typer.echo(f"  {k}: {v:.4f}")
@@ -184,7 +175,10 @@ def main(
 
         models_dir = Path("models")
         models_dir.mkdir(exist_ok=True)
-        model_filename = f"rf_depth{max_depth}_est{n_estimators}.joblib"
+        mlflow.sklearn.log_model(model, "random_forest_model")
+
+        models_dir.mkdir(exist_ok=True, parents=True)
+        model_filename = "rf_model.joblib"
         model_path = models_dir / model_filename
         joblib.dump(model, model_path)
         typer.echo(f"Model saved to {model_path}")

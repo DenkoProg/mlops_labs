@@ -1,0 +1,42 @@
+schema: '2.0'
+stages:
+  prepare:
+    cmd: python src/prepare.py data/raw/chest_xray data/prepared --img-size 64
+    deps:
+    - path: data/raw/chest_xray
+      hash: md5
+      md5: 5e95cbf05923c6f7a093e84fbdba9463.dir
+      size: 1236482806
+      nfiles: 5856
+    - path: src/prepare.py
+      hash: md5
+      md5: 483bca8772aeb275dee136b9bf3c5b60
+      size: 2003
+    outs:
+    - path: data/prepared
+      hash: md5
+      md5: 88881a1c024232fe96bac401a7e9dbcd.dir
+      size: 191412352
+      nfiles: 4
+  train:
+    cmd: python src/train.py data/prepared models --n-estimators 100 --max-depth
+      15
+    deps:
+    - path: data/prepared
+      hash: md5
+      md5: 88881a1c024232fe96bac401a7e9dbcd.dir
+      size: 191412352
+      nfiles: 4
+    - path: src/train.py
+      hash: md5
+      md5: 2ac7f32d537d6b0665501cd38f5e8947
+      size: 6869
+    outs:
+    - path: models/metrics.json
+      hash: md5
+      md5: 157b8da3ad07291aad9cab268de3bdd3
+      size: 393
+    - path: models/rf_model.joblib
+      hash: md5
+      md5: 0e3d64465458bf05faa3f7db18a8f66d
+      size: 2858105

@@ -1,0 +1,19 @@
+stages:
+  prepare:
+    cmd: python src/prepare.py data/raw/chest_xray data/prepared --img-size 64
+    deps:
+      - data/raw/chest_xray
+      - src/prepare.py
+    outs:
+      - data/prepared
+
+  train:
+    cmd: python src/train.py data/prepared models --n-estimators 100 --max-depth 15
+    deps:
+      - data/prepared
+      - src/train.py
+    outs:
+      - models/rf_model.joblib
+    metrics:
+      - models/metrics.json:
+          cache: false
