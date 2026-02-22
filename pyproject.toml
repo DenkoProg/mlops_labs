@@ -30,6 +30,7 @@ dev = [
     "ipywidgets",
     "ruff",
     "pytest>=9.0.2",
+    "apache-airflow>=3.1.7",
 ]
 
 # [build-system]

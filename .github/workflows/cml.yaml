@@ -36,9 +36,13 @@ jobs:
 
       # ── 4. Lint ───────────────────────────────────────────────────────────
       - name: Lint with Ruff
-        run: uv run ruff check src/ tests/
+        run: uv run ruff check src/ tests/ dags/
 
-      # ── 5. DVC – pull prepared data ───────────────────────────────────────
+      # ── 5. Validate Airflow DAGs (no live Airflow needed) ─────────────────
+      - name: Validate Airflow DAGs
+        run: uv run pytest tests/test_dag.py -v --tb=short
+
+      # ── 6. DVC – pull prepared data ───────────────────────────────────────
       - name: Configure DVC S3 remote
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}

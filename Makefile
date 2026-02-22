@@ -42,6 +42,22 @@ test-data: ## Run pre-train data validation tests only
 test-post: ## Run post-train quality gate tests
 	uv run pytest tests/test_artifacts.py -v
 
+.PHONY: test-dag
+test-dag: ## Validate Airflow DAG structure (no live Airflow needed)
+	uv run pytest tests/test_dag.py -v
+
+.PHONY: airflow-up
+airflow-up: ## Start Airflow stack (webserver + scheduler) via Docker Compose
+	docker compose up -d airflow-webserver airflow-scheduler
+
+.PHONY: airflow-init
+airflow-init: ## Initialize Airflow DB and create admin user (first time only)
+	docker compose up airflow-init
+
+.PHONY: airflow-down
+airflow-down: ## Stop and remove Airflow containers
+	docker compose down
+
 .PHONY: optimize
 optimize: ## Run Optuna hyperparameter optimization (20+ trials, MLflow nested runs)
 	uv run python src/optimize.py
