@@ -1,0 +1,120 @@
+name: CI/CD ML Pipeline
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+env:
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  test-and-report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # needed by CML to post PR comments
+      pull-requests: write
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── 2. Setup CML ─────────────────────────────────────────────────────
+      - name: Setup CML
+        uses: iterative/setup-cml@v2
+
+      # ── 3. Setup uv ───────────────────────────────────────────────────────
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      # ── 4. Lint ───────────────────────────────────────────────────────────
+      - name: Lint with Ruff
+        run: uv run ruff check src/ tests/
+
+      # ── 5. DVC – pull prepared data ───────────────────────────────────────
+      - name: Configure DVC S3 remote
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          uv run dvc remote modify myremote access_key_id "$AWS_ACCESS_KEY_ID"
+          uv run dvc remote modify myremote secret_access_key "$AWS_SECRET_ACCESS_KEY"
+
+      - name: Pull data from DVC remote
+        run: uv run dvc pull
+
+      # ── 6. Pre-train: data validation ─────────────────────────────────────
+      - name: Run pre-train data validation tests
+        run: uv run pytest tests/test_data.py -v --tb=short
+
+      # ── 7. Train (DVC pipeline) ───────────────────────────────────────────
+      - name: Run DVC pipeline (prepare + train)
+        run: uv run dvc repro
+
+      # ── 8. Post-train: artifact + quality gate ────────────────────────────
+      - name: Run post-train tests (Quality Gate)
+        run: uv run pytest tests/test_artifacts.py -v --tb=short
+
+      # ── 9. Generate CML report ────────────────────────────────────────────
+      - name: Generate CML report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          uv run python - <<'EOF'
+          import json, pathlib
+
+          metrics_path = pathlib.Path("models/metrics.json")
+          metrics = json.loads(metrics_path.read_text())
+          train = metrics["train"]
+          test  = metrics["test"]
+
+          report = []
+          report.append("## 🤖 ML Training Report\n")
+          report.append("### 📊 Metrics\n")
+          report.append("| Metric | Train | Test |")
+          report.append("|--------|-------|------|")
+          report.append(f"| Accuracy  | {train['train_accuracy']:.4f} | {test['test_accuracy']:.4f} |")
+          report.append(f"| F1 Score  | {train['train_f1']:.4f}       | {test['test_f1']:.4f}       |")
+          report.append(f"| Precision | {train['train_precision']:.4f} | {test['test_precision']:.4f} |")
+          report.append(f"| Recall    | {train['train_recall']:.4f}    | {test['test_recall']:.4f}    |")
+
+          f1 = test["test_f1"]
+          gate = "✅ PASSED" if f1 >= 0.80 else "❌ FAILED"
+          report.append(f"\n### 🎯 Quality Gate (F1 ≥ 0.80): {gate} (F1 = {f1:.4f})\n")
+
+          pathlib.Path("report.md").write_text("\n".join(report))
+          EOF
+
+          CM=$(find artifacts -name "confusion_matrix.png" | head -1)
+          if [ -n "$CM" ]; then
+            echo "" >> report.md
+            echo "### 🔢 Confusion Matrix" >> report.md
+            cml publish "$CM" --md >> report.md
+          fi
+
+          FI=$(find artifacts -name "feature_importance.png" | head -1)
+          if [ -n "$FI" ]; then
+            echo "" >> report.md
+            echo "### 📈 Feature Importance" >> report.md
+            cml publish "$FI" --md >> report.md
+          fi
+
+          cml comment create report.md
+
+      # ── 10. Upload model artifact (CD – on main push) ────────────────────
+      - name: Upload model artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: |
+            models/*.joblib
+            models/metrics.json
+          retention-days: 30

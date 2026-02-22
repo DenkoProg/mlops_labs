@@ -30,6 +30,18 @@ train: ## Run full DVC pipeline (prepare + train)
 push-data: ## Push data and model artifacts to DVC remote
 	uv run dvc push
 
+.PHONY: test
+test: ## Run all tests (pre-train + post-train)
+	uv run pytest tests/ -v
+
+.PHONY: test-data
+test-data: ## Run pre-train data validation tests only
+	uv run pytest tests/test_data.py -v
+
+.PHONY: test-post
+test-post: ## Run post-train quality gate tests
+	uv run pytest tests/test_artifacts.py -v
+
 .PHONY: optimize
 optimize: ## Run Optuna hyperparameter optimization (20+ trials, MLflow nested runs)
 	uv run python src/optimize.py

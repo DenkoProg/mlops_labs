@@ -29,6 +29,7 @@ dev = [
     "pre-commit",
     "ipywidgets",
     "ruff",
+    "pytest>=9.0.2",
 ]
 
 # [build-system]
