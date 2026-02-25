@@ -63,7 +63,7 @@ def test_quality_gate_f1(metrics):
     """Quality Gate: test F1-score must be >= threshold."""
     f1 = metrics["test"]["test_f1"]
     assert f1 >= F1_THRESHOLD, (
-        f"Quality Gate FAILED: test_f1={f1:.4f} < threshold={F1_THRESHOLD}. " "Model is not good enough to proceed."
+        f"Quality Gate FAILED: test_f1={f1:.4f} < threshold={F1_THRESHOLD}. Model is not good enough to proceed."
     )
 
 

@@ -39,7 +39,7 @@ with DAG(
 ) as dag:
     prepare_data = BashOperator(
         task_id="prepare_data",
-        bash_command=(f"{UV_RUN} src/prepare.py " "data/raw/chest_xray data/prepared --img-size 64"),
+        bash_command=(f"{UV_RUN} src/prepare.py data/raw/chest_xray data/prepared --img-size 64"),
     )
 
     train_model = BashOperator(
