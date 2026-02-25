@@ -1,4 +1,6 @@
 
+export MLFLOW_TRACKING_URI := sqlite:///mlruns/mlflow.db
+
 .PHONY: install
 install: ## Install dependencies and setup pre-commit hooks
 	@echo "🚀 Installing dependencies from lockfile"
@@ -48,6 +50,10 @@ test-dag: ## Validate Airflow DAG structure (no live Airflow needed)
 
 .PHONY: airflow-up
 airflow-up: ## Start Airflow stack (webserver + scheduler) via Docker Compose
+	@mkdir -p logs/airflow && chmod -R 777 logs/airflow
+	@mkdir -p mlruns && chmod -R 777 mlruns
+	@mkdir -p artifacts && chmod -R 777 artifacts
+	@mkdir -p models && chmod -R 777 models
 	docker compose up -d airflow-webserver airflow-scheduler
 
 .PHONY: airflow-init
@@ -64,7 +70,7 @@ optimize: ## Run Optuna hyperparameter optimization (20+ trials, MLflow nested r
 
 .PHONY: mlflow
 mlflow: ## Launch MLflow UI at http://127.0.0.1:5000
-	uv run mlflow ui
+	uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
 
 .PHONY: eda
 eda: ## Open EDA notebook

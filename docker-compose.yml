@@ -11,6 +11,11 @@ x-airflow-common: &airflow-common
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
     # Mount project root so DAGs can call src/ scripts directly
     MLOPS_PROJECT_ROOT: /opt/mlops
+    MLFLOW_TRACKING_URI: sqlite:////opt/mlops/mlruns/mlflow.db
+    PYTEST_CACHE_DIR: /tmp/.pytest_cache
+    _PIP_ADDITIONAL_REQUIREMENTS: >-
+      pandas numpy scikit-learn matplotlib seaborn mlflow==3.9.0 pillow tqdm
+      typer optuna>=4.7.0 hydra-core>=1.3.2 omegaconf>=2.3.0 pytest
   volumes:
     - ./dags:/opt/airflow/dags
     - ./logs/airflow:/opt/airflow/logs
@@ -19,7 +24,8 @@ x-airflow-common: &airflow-common
     - ./data:/opt/mlops/data
     - ./models:/opt/mlops/models
     - ./artifacts:/opt/mlops/artifacts
-    - ./.venv:/opt/mlops/.venv
+    - ./mlruns:/opt/mlops/mlruns
+    - ./tests:/opt/mlops/tests
   depends_on:
     postgres:
       condition: service_healthy
@@ -31,6 +37,8 @@ services:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "airflow"]
       interval: 5s
@@ -38,23 +46,34 @@ services:
 
   airflow-init:
     <<: *airflow-common
-    command: >
-      bash -c "airflow db init &&
-               airflow users create --username admin --password admin
-                 --firstname Admin --lastname User
-                 --role Admin --email admin@example.com"
+    command: bash -c "airflow db migrate && airflow users create -u admin -p admin -f Admin -l User -r Admin -e admin@example.com || true"
     restart: "no"
 
   airflow-webserver:
     <<: *airflow-common
     command: webserver
+    restart: on-failure
     ports:
-      - "8080:8080"
+      - "8081:8080"
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
       retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
 
   airflow-scheduler:
     <<: *airflow-common
     command: scheduler
+    restart: on-failure
+    depends_on:
+      postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  postgres-db:

@@ -19,7 +19,7 @@ from airflow.operators.bash import BashOperator
 # Project root is mounted at /opt/mlops inside the Airflow container,
 # but when testing locally we fall back to the repo root.
 PROJECT_ROOT = os.environ.get("MLOPS_PROJECT_ROOT", ".")
-UV_RUN = f"cd {PROJECT_ROOT} && .venv/bin/python"
+UV_RUN = f"cd {PROJECT_ROOT} && python3"
 
 default_args = {
     "owner": "mlops",
@@ -45,14 +45,14 @@ with DAG(
     train_model = BashOperator(
         task_id="train_model",
         bash_command=(
-            f"cd {PROJECT_ROOT} && .venv/bin/python src/train.py "
+            f"cd {PROJECT_ROOT} && python3 src/train.py "
             "data/prepared models --n-estimators 100 --max-depth 15"
         ),
     )
 
     evaluate_model = BashOperator(
         task_id="evaluate_model",
-        bash_command=(f"cd {PROJECT_ROOT} && .venv/bin/pytest tests/test_artifacts.py -v --tb=short"),
+        bash_command=(f"cd {PROJECT_ROOT} && python3 -m pytest tests/test_artifacts.py -v --tb=short"),
     )
 
     register_model = BashOperator(

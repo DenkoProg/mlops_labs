@@ -92,7 +92,7 @@ def main(cfg: DictConfig) -> None:
     X_train, y_train, X_test, y_test = load_prepared_data(prepared_dir)
     log.info(f"Train: {X_train.shape}, Test: {X_test.shape}")
 
-    mlflow.set_tracking_uri(f"sqlite:///{Path(hydra.utils.get_original_cwd()) / 'mlflow.db'}")
+    mlflow.set_tracking_uri(f"sqlite:///{Path(hydra.utils.get_original_cwd()) / 'mlruns' / 'mlflow.db'}")
     mlflow.set_experiment(cfg.mlflow.experiment_name)
 
     with mlflow.start_run(run_name="hpo_study") as parent_run:
