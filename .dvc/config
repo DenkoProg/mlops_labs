@@ -1,4 +1,7 @@
 [core]
-    remote = mylocal
+    remote = myremote
 ['remote "mylocal"']
     url = ../../dvc_storage
+['remote "myremote"']
+    url = s3://my-first-repo/dvc-store
+    endpointurl = https://dagshub.com/api/v1/repo-buckets/s3/DenkoProg
