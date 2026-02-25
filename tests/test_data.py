@@ -34,19 +34,19 @@ def test_data_shapes(prepared_data):
 
 def test_data_consistency(prepared_data):
     """Number of samples must match between X and y arrays."""
-    assert (
-        prepared_data["X_train.npy"].shape[0] == prepared_data["y_train.npy"].shape[0]
-    ), "X_train and y_train sample count mismatch"
-    assert (
-        prepared_data["X_test.npy"].shape[0] == prepared_data["y_test.npy"].shape[0]
-    ), "X_test and y_test sample count mismatch"
+    assert prepared_data["X_train.npy"].shape[0] == prepared_data["y_train.npy"].shape[0], (
+        "X_train and y_train sample count mismatch"
+    )
+    assert prepared_data["X_test.npy"].shape[0] == prepared_data["y_test.npy"].shape[0], (
+        "X_test and y_test sample count mismatch"
+    )
 
 
 def test_feature_dimensions_match(prepared_data):
     """Train and test must have the same number of features."""
-    assert (
-        prepared_data["X_train.npy"].shape[1] == prepared_data["X_test.npy"].shape[1]
-    ), "X_train and X_test have different feature dimensions"
+    assert prepared_data["X_train.npy"].shape[1] == prepared_data["X_test.npy"].shape[1], (
+        "X_train and X_test have different feature dimensions"
+    )
 
 
 def test_label_values(prepared_data):

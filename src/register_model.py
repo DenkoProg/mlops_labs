@@ -49,7 +49,7 @@ def main() -> None:
 
     if new_f1 <= current_f1:
         log.info(
-            f"New model (f1={new_f1:.4f}) is not better than champion (f1={current_f1:.4f}). " "Skipping registration."
+            f"New model (f1={new_f1:.4f}) is not better than champion (f1={current_f1:.4f}). Skipping registration."
         )
         return
 
@@ -61,10 +61,9 @@ def main() -> None:
     model_path = sorted(model_files)[-1]
     model = joblib.load(model_path)
 
-    with mlflow.start_run(run_name="model_registration") as run:
+    with mlflow.start_run(run_name="model_registration"):
         mlflow.log_metrics({"test_f1": new_f1, "test_accuracy": new_accuracy})
         mlflow.sklearn.log_model(model, name="rf_model", registered_model_name=MODEL_NAME)
-        run_id = run.info.run_id
 
     # Get the latest registered version and promote it
     versions = client.search_model_versions(f"name='{MODEL_NAME}'")
